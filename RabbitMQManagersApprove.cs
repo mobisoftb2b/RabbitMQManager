@@ -17,6 +17,8 @@ namespace RabbitMQManager
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
         MessageHelper mhelper = new MessageHelper();
+        ClientLog clientLog = new ClientLog();
+
 
         ConnectionFactory factory;
         IConnection connection;
@@ -241,15 +243,15 @@ namespace RabbitMQManager
                 //bool keepShort;
                 //int clientType = 0;
                 MessageData messagedata = null;
-                mhelper.HandleMessage(message, out messagedata);
+                mhelper.HandleMessage(ref message, out messagedata);
                 if (messagedata.isForwardMessage)
                 {   //askApprove or cancel
                     //first add parent (agent record log)
-                    Guid? ManagersQueueLog_ID = null;
+                    Guid ManagersQueueLog_ID = messagedata.agentMessageId;
                     if (messagedata.queueName != null && !String.IsNullOrEmpty(messagedata.jsonMessageToReturn))
                     {
                         SendMessage(messagedata.jsonMessageToReturn, messagedata.queueName, 0, messagedata.keepShort);
-                        mhelper.AddLog(null, message, messagedata.jsonMessageToReturn, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, messagedata.managerQueues.Count, out ManagersQueueLog_ID);
+                        mhelper.AddLog(ManagersQueueLog_ID, null, message, messagedata.jsonMessageToReturn, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, messagedata.managerQueues.Count, null, null);
                     }
                     if (messagedata.managerQueues != null && messagedata.managerQueues.Count > 0)
                     {
@@ -258,8 +260,8 @@ namespace RabbitMQManager
                         foreach (var managerQueue in messagedata.managerQueues)
                         {
                             SendMessage(messagedata.jsonMessageToSend, managerQueue.QueueName);
-                            Guid? ManagersQueueLog_ID2 = null;
-                            mhelper.AddLog(ManagersQueueLog_ID.Value, message, messagedata.jsonMessageToSend, managerQueue.QueueName, managerQueue.DeviceID, 1, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, out ManagersQueueLog_ID2);
+                            Guid ManagersQueueLog_ID2 = Guid.NewGuid();
+                            mhelper.AddLog(ManagersQueueLog_ID2, ManagersQueueLog_ID, message, messagedata.jsonMessageToSend, managerQueue.QueueName, managerQueue.DeviceID, 1, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, null);
                             if (messagedata.sendNotification)
                             {
                                 string notificationMessageManagerApprove = ConfigurationManager.AppSettings["notificationMessageManagerApprove"];
@@ -274,8 +276,20 @@ namespace RabbitMQManager
                     if (messagedata.queueName != null)
                     {
                         SendMessage(messagedata.jsonMessageToSend, messagedata.queueName, 0, messagedata.keepShort);
-                        Guid? ManagersQueueLog_ID3 = null;
-                        mhelper.AddLog(null, message, messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, out ManagersQueueLog_ID3);
+                        Guid ManagersQueueLog_ID3 = Guid.NewGuid();
+                        if (messagedata.command == "sendLog")
+                        {
+                            mhelper.AddLog(ManagersQueueLog_ID3, null, "sendLog", messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, null);
+                            clientLog.SaveFile(messagedata.fileContent, messagedata.fileName);
+                        }
+                        else
+                            if (messagedata.command == "received")
+                        {
+                            Guid? agentLogID = Guid.Parse(messagedata.AgentMessageId); 
+                            mhelper.AddLog(ManagersQueueLog_ID3, agentLogID, message, messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, messagedata.managerEmployeeId, messagedata.requestStatus);
+                        }
+                        else
+                            mhelper.AddLog(ManagersQueueLog_ID3, null, message, messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, messagedata.requestStatus);
                     }
                 }
                 

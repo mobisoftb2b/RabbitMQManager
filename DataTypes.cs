@@ -24,9 +24,16 @@ namespace RabbitMQManager
         public string managerName { get; set; }
         public string subject { get; set; }
         public string testNumber { get; set; }
+        public string fileName { get; set; }
+        public string fileContent { get; set; }
+        public Guid agentMessageId { get; set; }
+
+        public String requestStatus { get; set; }
+        public String AgentMessageId { get; set; }
     }
     class LoginUserResponse { 
         public int status { get; set; }
+        public string name { get; set; }
         public string command { get; set; }
         public string requestMessageId { get; set; }
         public string testNumber { get; set; }
@@ -53,7 +60,14 @@ namespace RabbitMQManager
         public string deviceUniqueID { get; set; }
     };
 
-    
+    class SendLogResponse
+    {
+        public string command { get; set; }
+        public string requestMessageId { get; set; }
+        public string deviceUniqueID { get; set; }
+        public string fileName { get; set; }
+    };
+
     class SingleMessage
     {
         public object header { get; set; }

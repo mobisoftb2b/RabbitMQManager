@@ -41,7 +41,7 @@ namespace RabbitMQManager
             }
         }
 
-        public void HandleMessage(string message, out MessageData messagedata) {
+        public void HandleMessage(ref String message, out MessageData messagedata) {
             messagedata = new MessageData();
             messagedata.jsonMessageToSend = "";
             messagedata.managerQueues = new List<ManagerQueue>();
@@ -66,6 +66,7 @@ namespace RabbitMQManager
                     messagedata.testNumber = "0";
                     string messageId = "";
                     int status = 0;
+                    string ManagerName = "";
                     messagedata.command = (String)jsonMessage.command;
                     logger.Info(messagedata.command);
                     switch (messagedata.command)
@@ -80,9 +81,9 @@ namespace RabbitMQManager
                                 messagedata.testNumber = (string)jsonMessage.testNumber;
                             if (jsonMessage.MessageId != null)
                                 messageId = (string)jsonMessage.MessageId;
-                            ManagerQueue_LoginUser(messagedata.managerEmployeeId, (string)jsonMessage.Password, messagedata.deviceUniqueID, out status);
+                            ManagerQueue_LoginUser(messagedata.managerEmployeeId, (string)jsonMessage.Password, messagedata.deviceUniqueID, out status, out ManagerName);
                             data = status == 0 ? GetManagerAuthorizationGroupActivities(messagedata.managerEmployeeId) : null;
-                            messagedata.jsonMessageToSend = ArrangeMessage_LoginUser(status, data, messagedata.deviceUniqueID, messagedata.testNumber, messageId);
+                            messagedata.jsonMessageToSend = ArrangeMessage_LoginUser(status, data, messagedata.deviceUniqueID, messagedata.testNumber, messageId, ManagerName);
                             logger.Info(messagedata.jsonMessageToSend);
                             messagedata.keepShort = true;
                             break;
@@ -137,6 +138,38 @@ namespace RabbitMQManager
                             messagedata.deviceUniqueID = ((dynamic)jsonMessage.deviceInfo).DeviceUniqueID;
                             KeepAlive((object)jsonMessage.deviceInfo);
                             messagedata.jsonMessageToSend = ArrangeCommonMessage(messagedata.deviceUniqueID, "keepalive", messageId);
+                            logger.Info(messagedata.jsonMessageToSend);
+                            messagedata.keepShort = true;
+                            break;
+                        case "sendLog":
+                            messagedata.clientType = 1;
+                            if (jsonMessage.QueueName != null)
+                                messagedata.queueName = (string)jsonMessage.QueueName;
+                            if (jsonMessage.MessageId != null)
+                                messageId = (string)jsonMessage.MessageId;
+                            if (jsonMessage.FileName != null)
+                                messagedata.fileName = (string)jsonMessage.FileName;
+                            if (jsonMessage.FileData != null)
+                                messagedata.fileContent = (string)jsonMessage.FileData;
+                            messagedata.deviceUniqueID = ((dynamic)jsonMessage.deviceInfo).DeviceUniqueID;
+                            messagedata.jsonMessageToSend = ArrangeMessageSendLog(messagedata.deviceUniqueID, messagedata.fileName, messageId);
+                            logger.Info(messagedata.jsonMessageToSend);
+                            messagedata.keepShort = true;
+                            break;
+                        case "received":
+                            messagedata.clientType = 1;
+                            if (jsonMessage.QueueName != null)
+                                messagedata.queueName = (string)jsonMessage.QueueName;
+                            if (jsonMessage.MessageId != null)
+                                messageId = (string)jsonMessage.MessageId;
+                            if (jsonMessage.RequestStatus != null)
+                                messagedata.requestStatus = (string)jsonMessage.RequestStatus;
+                            if (jsonMessage.AgentMessageId != null)
+                                messagedata.AgentMessageId = (string)jsonMessage.AgentMessageId;
+                            messagedata.managerEmployeeId = (string)jsonMessage.ManagerEmplId;
+                            messagedata.deviceUniqueID = ((dynamic)jsonMessage.deviceInfo).DeviceUniqueID;
+                            UpdateReceivedMessage(messagedata.AgentMessageId, messagedata.requestStatus, messagedata.managerEmployeeId);
+                            messagedata.jsonMessageToSend = ArrangeCommonMessage(deviceUniqueID, "received", messageId);
                             logger.Info(messagedata.jsonMessageToSend);
                             messagedata.keepShort = true;
                             break;
@@ -196,9 +229,10 @@ namespace RabbitMQManager
                                 messagedata.testNumber = (string)jsonMessage.testNumber;
                             messagedata.jsonMessageToReturn = ArrangeMessage_toTablet("updateAckReceived", (dynamic)jsonMessage, messagedata.deviceUniqueID, messagedata.managerEmployeeId, messagedata.managerQueues, messagedata.testNumber);
                             messagedata.isForwardMessage = true;
+                            messagedata.agentMessageId = Guid.NewGuid();
+                            message = message.Insert(message.LastIndexOf('}') - 1, $@",""AgentMessageId"":""{messagedata.agentMessageId}""");
                             break;
                         case "askApprove":
-                            messagedata.jsonMessageToSend = message;
                             GetDeviceIDFromTabletMessage((dynamic)jsonMessage.consumerToken, out deviceUniqueID, out queueName);
                             messagedata.deviceUniqueID = deviceUniqueID;
                             messagedata.queueName = queueName;
@@ -217,9 +251,12 @@ namespace RabbitMQManager
                             messagedata.jsonMessageToReturn = ArrangeMessage_toTablet("askApproveReceived", (dynamic)jsonMessage, messagedata.deviceUniqueID, messagedata.managerEmployeeId, messagedata.managerQueues, messagedata.testNumber);
                             messagedata.sendNotification = true;
                             messagedata.isForwardMessage = true;
+                            messagedata.agentMessageId = Guid.NewGuid();
+                            message = message.Insert(message.LastIndexOf('}'), $@",""AgentMessageId"":""{messagedata.agentMessageId}""");
+                            //logger.Info(message);
+                            messagedata.jsonMessageToSend = message;
                             break;
                         case "cancel":
-                            messagedata.jsonMessageToSend = message;
                             GetDeviceIDFromTabletMessage((dynamic)jsonMessage.consumerToken, out deviceUniqueID, out queueName);
                             messagedata.deviceUniqueID = deviceUniqueID;
                             messagedata.queueName = queueName;
@@ -237,6 +274,9 @@ namespace RabbitMQManager
                                 messagedata.testNumber = (string)jsonMessage.testNumber;
                             messagedata.jsonMessageToReturn = ArrangeMessage_toTablet("cancelReceived", (dynamic)jsonMessage, messagedata.deviceUniqueID, messagedata.managerEmployeeId, messagedata.managerQueues, messagedata.testNumber);
                             messagedata.isForwardMessage = true;
+                            messagedata.agentMessageId = Guid.NewGuid();
+                            message = message.Insert(message.LastIndexOf('}'), $@",""AgentMessageId"":""{messagedata.agentMessageId}""");
+                            messagedata.jsonMessageToSend = message;
                             break;
                     }
                 }
@@ -261,9 +301,9 @@ namespace RabbitMQManager
                 logger.Error(ex);
             }
         }
-        public void AddLog(Guid? AgentLog_ID, string Request, string Response, string queueName, string DeviceID, int ClientType, string Command, string AgentId, string AgentName, string EmployeeId, string ActivityCode, string ActivityDescription, string ManagerEmployeeId, string ManagerName, string Subject, Nullable<int> SentToManagersCount, out Guid? ManagersQueueLog_ID)
+        public void AddLog(Guid ManagersQueueLog_ID, Guid? AgentLog_ID, string Request, string Response, string queueName, string DeviceID, int ClientType, string Command, string AgentId, string AgentName, string EmployeeId, string ActivityCode, string ActivityDescription, string ManagerEmployeeId, string ManagerName, string Subject, Nullable<int> SentToManagersCount, string ReceivedManagerEmployeeId, string ReceivedStatus)
         {
-            dbManager.ManagersQueue_Log_Add(AgentLog_ID, Request, Response, queueName, DeviceID, ClientType, Command, AgentId, AgentName, EmployeeId, ActivityCode, ActivityDescription, ManagerEmployeeId, ManagerName, Subject, SentToManagersCount, out ManagersQueueLog_ID);
+            dbManager.ManagersQueue_Log_Add(ManagersQueueLog_ID, AgentLog_ID, Request, Response, queueName, DeviceID, ClientType, Command, AgentId, AgentName, EmployeeId, ActivityCode, ActivityDescription, ManagerEmployeeId, ManagerName, Subject, SentToManagersCount, ReceivedManagerEmployeeId, ReceivedStatus);
         }
 
         /*
@@ -310,6 +350,19 @@ namespace RabbitMQManager
         }
 
 
+        private void UpdateReceivedMessage(String OriginalAgentMessageId, String RequestStatus, String ManagerEmployeeId)
+        {
+            try
+            {
+                Guid OriginalAgentLogID = Guid.Parse(OriginalAgentMessageId);
+                dbManager.ManagerQueueLog_UpdateReceivedMessage(OriginalAgentLogID, RequestStatus, ManagerEmployeeId);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+        }
+
         private List<ManagerAuthorizationGroupActivities> GetManagerAuthorizationGroupActivities(String EmployeeId)
         {
             try
@@ -327,9 +380,9 @@ namespace RabbitMQManager
         }
 
 
-        private String ArrangeMessage_LoginUser(int status, object data, string deviceUniqueID, string testNumber = "0", string messageId = "")
+        private String ArrangeMessage_LoginUser(int status, object data, string deviceUniqueID, string testNumber = "0", string messageId = "", string ManagerName="")
         {
-            LoginUserResponse lr = new LoginUserResponse() { status = status, command = "loginUser", testNumber = testNumber, data = data, deviceUniqueID = deviceUniqueID, requestMessageId = messageId };
+            LoginUserResponse lr = new LoginUserResponse() { status = status, command = "loginUser", name= ManagerName,  testNumber = testNumber, data = data, deviceUniqueID = deviceUniqueID, requestMessageId = messageId };
 
             string result = JsonConvert.SerializeObject(lr);
 
@@ -403,6 +456,13 @@ namespace RabbitMQManager
             return result;
         }
 
+        private String ArrangeMessageSendLog(string deviceUniqueID, string fileName, string messageId = "")
+        {
+            SendLogResponse sr = new SendLogResponse() { command = "sendLog", deviceUniqueID = deviceUniqueID, requestMessageId=messageId, fileName=fileName };
+            string result = JsonConvert.SerializeObject(sr);
+            return result;
+        }
+
         public List<string> GetAllManagers(int numManagers)
         {
             return dbManager.GetAllManagers(numManagers);
@@ -432,12 +492,12 @@ namespace RabbitMQManager
             return result;
         }
 
-        private void ManagerQueue_LoginUser(string ManagerEmployeeId, string Password, string deviceID, out int Status)
+        private void ManagerQueue_LoginUser(string ManagerEmployeeId, string Password, string deviceID, out int Status, out string ManagerName)
         {
             string error = "";
             Status = 1;
-            dbManager.ManagerQueue_LoginUser(ManagerEmployeeId, Password, out Status, out error);
-            logger.Info($@" Userlogin ManagerEmployeeId={ManagerEmployeeId} from  deviceid {deviceID} result status={Status} {error}");
+            dbManager.ManagerQueue_LoginUser(ManagerEmployeeId, Password, out Status, out error, out ManagerName);
+            logger.Info($@" Userlogin ManagerEmployeeId={ManagerEmployeeId} from  deviceid {deviceID} result status={Status} Name={ManagerName} {error}");
         }
         public void CallFCMNode(Guid? ManagersQueueLog_ID, string ManagerEmployeeId, string pushAddress, string message, string deviceID) {
             int exitCode;

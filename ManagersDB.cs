@@ -164,9 +164,36 @@ namespace RabbitMQManager
             return -1;
         }
         */
-        public int ManagersQueue_Log_Add(Guid? AgentLog_ID, string Request, string Response, string QueueName, string DeviceID, int ClientType, string Command, string AgentId, string AgentName, string EmployeeId, string ActivityCode, string ActivityDescription, string ManagerEmployeeId, string ManagerName, string Subject, Nullable<int> SentToManagersCount, out Guid? ManagersQueueLog_ID)
+
+        public int ManagerQueueLog_UpdateReceivedMessage(Guid OriginalAgentLogID, String RequestStatus, String ManagerEmployeeId) {
+            try
+            {
+                int result = -1;
+                using (var conn = new SqlConnection(connectionString))
+                using (var command = new SqlCommand("ManagersQueue_Log_UpdateReceived", conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+
+                })
+                {
+                    command.Parameters.Add(new SqlParameter("@OriginalAgentLogID", OriginalAgentLogID));
+                    command.Parameters.Add(new SqlParameter("@ReceivedStatus", RequestStatus));
+                    command.Parameters.Add(new SqlParameter("@ReceivedManagerEmployeeId", ManagerEmployeeId));
+
+                    conn.Open();
+                    result = command.ExecuteNonQuery();
+                    conn.Close();
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+            return -1;
+        }
+        public int ManagersQueue_Log_Add(Guid ManagersQueueLog_ID, Guid? AgentLog_ID, string Request, string Response, string QueueName, string DeviceID, int ClientType, string Command, string AgentId, string AgentName, string EmployeeId, string ActivityCode, string ActivityDescription, string ManagerEmployeeId, string ManagerName, string Subject, Nullable<int> SentToManagersCount, string ReceivedManagerEmployeeId, string ReceivedStatus)
         {
-            ManagersQueueLog_ID = null;
             try
             {
                 int result = -1;
@@ -177,6 +204,7 @@ namespace RabbitMQManager
 
                 })
                 {
+                    command.Parameters.Add(new SqlParameter("@ManagersQueueLog_ID", ManagersQueueLog_ID));
                     command.Parameters.Add(new SqlParameter("@AgentLog_ID", AgentLog_ID));
                     command.Parameters.Add(new SqlParameter("@Request", Request));
                     command.Parameters.Add(new SqlParameter("@Response", Response));
@@ -193,15 +221,11 @@ namespace RabbitMQManager
                     command.Parameters.Add(new SqlParameter("@ManagerName", ManagerName));
                     command.Parameters.Add(new SqlParameter("@Subject", Subject));
                     command.Parameters.Add(new SqlParameter("@SentToManagersCount", SentToManagersCount));
-                    SqlParameter pvNewId = new SqlParameter();
-                    pvNewId.ParameterName = "@ManagersQueueLog_ID";
-                    pvNewId.DbType = DbType.Guid;
-                    pvNewId.Direction = ParameterDirection.Output;
-                    command.Parameters.Add(pvNewId);
-                    
+                    command.Parameters.Add(new SqlParameter("@ReceivedManagerEmployeeId", ReceivedManagerEmployeeId));
+                    command.Parameters.Add(new SqlParameter("@ReceivedStatus", ReceivedStatus));
+
                     conn.Open();
                     result = command.ExecuteNonQuery();
-                    ManagersQueueLog_ID = command.Parameters["@ManagersQueueLog_ID"].Value as Guid?;
                     conn.Close();
                 }
                 return result;
@@ -510,11 +534,12 @@ namespace RabbitMQManager
             }
         }
 
-        public int ManagerQueue_LoginUser(string ManagerEmployeeId, string Password, out int status,  out string error)
+        public int ManagerQueue_LoginUser(string ManagerEmployeeId, string Password, out int status,  out string error, out string ManagerName)
         {
-            int result = -1;
+            //int result = -1;
             status = 0;
             error = "";
+            ManagerName = "";
             try
             {
                 var ManagerVersionList = new List<ManagerVersion>();
@@ -533,7 +558,8 @@ namespace RabbitMQManager
 
                     while (reader.Read())
                     {
-                        result = (Int32)reader["Status"];
+                        status = (Int32)reader["Status"];
+                        ManagerName = (String)reader["Name"];
                         error = (String)reader["Error"];
                     }
                     conn.Close();
@@ -543,6 +569,8 @@ namespace RabbitMQManager
             }
             catch (Exception ex)
             {
+                status = 1;
+                error = ex.Message;
                 logger.Error(ex);
                 return -1;
             }
