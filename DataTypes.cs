@@ -51,6 +51,7 @@ namespace RabbitMQManager
         public string apk { get; set; }
         public int updateMandatory { get; set; }
         public int newMessageTime { get; set; }
+        public object data { get; set; }
     };
 
     class LogoutResponse
