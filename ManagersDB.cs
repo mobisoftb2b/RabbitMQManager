@@ -17,7 +17,7 @@ namespace RabbitMQManager
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        public int ManagersQueue_Login(string ManagerID, string ManagerEmployeeId, string QueueName, string DeviceName, string DeviceID, string PushAddr)
+        public int ManagersQueue_Login(string ManagerID, string ManagerEmployeeId, string QueueName, string PushQueueName, string DeviceName, string DeviceID, string PushAddr)
         {
             try
             {
@@ -32,6 +32,7 @@ namespace RabbitMQManager
                     command.Parameters.Add(new SqlParameter("@ManagerID", ManagerID));
                     command.Parameters.Add(new SqlParameter("@ManagerEmployeeId", ManagerEmployeeId));
                     command.Parameters.Add(new SqlParameter("@QueueName", QueueName));
+                    command.Parameters.Add(new SqlParameter("@PushQueueName", PushQueueName));
                     command.Parameters.Add(new SqlParameter("@DeviceName", DeviceName));
                     command.Parameters.Add(new SqlParameter("@DeviceID", DeviceID));
                     command.Parameters.Add(new SqlParameter("@PushAddr", PushAddr));

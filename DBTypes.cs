@@ -53,6 +53,7 @@ namespace RabbitMQManager
 
     public class ManagerQueue { 
         public string QueueName { get; set; }
+        public string PushQueueName { get; set; }
         public string PushAddr { get; set; }
         public string DeviceID { get; set; }
     }

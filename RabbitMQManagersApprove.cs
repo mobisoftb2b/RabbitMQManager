@@ -266,6 +266,8 @@ namespace RabbitMQManager
                             {
                                 string notificationMessageManagerApprove = ConfigurationManager.AppSettings["notificationMessageManagerApprove"];
                                 mhelper.CallFCMNode(ManagersQueueLog_ID2, messagedata.managerEmployeeId, managerQueue.PushAddr, notificationMessageManagerApprove, managerQueue.DeviceID);
+                                if (!String.IsNullOrEmpty(managerQueue.PushQueueName))
+                                    SendMessage(messagedata.jsonMessagePush, managerQueue.PushQueueName);
                             }
                         }
                     }

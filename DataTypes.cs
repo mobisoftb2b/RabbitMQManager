@@ -7,6 +7,7 @@ namespace RabbitMQManager
     public class MessageData {
         public string jsonMessageToSend { get; set; }
         public string queueName { get; set; }
+        public string pushQueueName { get; set; }
         public List<ManagerQueue> managerQueues { get; set; }
         public string deviceUniqueID { get; set; }
         public bool sendNotification { get; set; }
@@ -30,6 +31,8 @@ namespace RabbitMQManager
 
         public String requestStatus { get; set; }
         public String AgentMessageId { get; set; }
+
+        public String jsonMessagePush { get; set; }
     }
     class LoginUserResponse { 
         public int status { get; set; }
