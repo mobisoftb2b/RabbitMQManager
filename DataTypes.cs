@@ -25,6 +25,8 @@ namespace RabbitMQManager
         public string managerName { get; set; }
         public string subject { get; set; }
         public string testNumber { get; set; }
+
+        public string test { get; set; }
         public string fileName { get; set; }
         public string fileContent { get; set; }
         public Guid agentMessageId { get; set; }

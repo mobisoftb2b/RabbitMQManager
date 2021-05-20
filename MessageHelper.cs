@@ -291,6 +291,8 @@ namespace RabbitMQManager
                             messagedata.agentMessageId = Guid.NewGuid();
                             message = message.Insert(message.LastIndexOf('}'), $@",""AgentMessageId"":""{messagedata.agentMessageId}""");
                             messagePush = message.Insert(message.LastIndexOf('}'), $@",""PushMessage"":""{notificationMessageManagerApprove}""");
+                            if (jsonMessage.test != null)
+                                messagedata.test = (string)jsonMessage.test;
                             //logger.Info(message);
                             messagedata.jsonMessageToSend = message;
                             messagedata.jsonMessagePush = messagePush;
