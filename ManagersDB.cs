@@ -418,7 +418,12 @@ namespace RabbitMQManager
                     // iterate through results, printing each to console
                     while (reader.Read())
                     {
-                        var ManagerQueueItem = new ManagerQueue() { QueueName = (String)reader["QueueName"], PushQueueName = (String)reader["PushQueueName"], PushAddr = (String)reader["PushAddr"], DeviceID = (String)reader["DeviceID"] };
+                        var ManagerQueueItem = new ManagerQueue();
+                        ManagerQueueItem.QueueName = (String)reader["QueueName"];
+                        ManagerQueueItem.PushQueueName = reader["PushQueueName"] == DBNull.Value ? String.Empty : (String)reader["PushQueueName"];
+                        ManagerQueueItem.PushAddr = (String)reader["PushAddr"];
+                        ManagerQueueItem.DeviceID = (String)reader["DeviceID"];
+
                         ManagerQueueList.Add(ManagerQueueItem);
                         //Console.WriteLine((String)reader["ItemCode"] + ' ' + (String)reader["Image"] + ' ' + ((DateTime)reader["Date"]).ToLongDateString());
                     }
