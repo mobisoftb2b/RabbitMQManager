@@ -255,6 +255,7 @@ namespace RabbitMQManager
                             if (!String.IsNullOrEmpty(managerQueue.PushQueueName))
                             {
                                 SendMessage(messagedata.jsonMessagePush, managerQueue.PushQueueName);
+                                mhelper.AddPushLog(Guid.NewGuid(), managerQueue.PushQueueName, messagedata.jsonMessagePush, messagedata.managerEmployeeId, messagedata.agentId, messagedata.agentName);
                                 logger.Info("sent queue push to queue" + managerQueue.PushQueueName + " message " + messagedata.jsonMessagePush);
                             }
                         }
@@ -277,12 +278,15 @@ namespace RabbitMQManager
                                 mhelper.AddLog(ManagersQueueLog_ID2, ManagersQueueLog_ID, message, messagedata.jsonMessageToSend, managerQueue.QueueName, managerQueue.DeviceID, 1, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, null);
                                 if (messagedata.sendNotification)
                                 {
-                                    string notificationMessageManagerApprove = ConfigurationManager.AppSettings["notificationMessageManagerApprove"];
-                                    mhelper.CallFCMNode(ManagersQueueLog_ID2, messagedata.managerEmployeeId, managerQueue.PushAddr, notificationMessageManagerApprove, managerQueue.DeviceID);
                                     if (!String.IsNullOrEmpty(managerQueue.PushQueueName))
                                     {
                                         SendMessage(messagedata.jsonMessagePush, managerQueue.PushQueueName);
                                         logger.Info("sent queue push to queue" + managerQueue.PushQueueName + " message " + messagedata.jsonMessagePush);
+                                        mhelper.AddPushLog(ManagersQueueLog_ID2, managerQueue.PushQueueName, messagedata.jsonMessagePush, messagedata.managerEmployeeId, messagedata.agentId, messagedata.agentName);
+                                    }
+                                    else {
+                                        string notificationMessageManagerApprove = ConfigurationManager.AppSettings["notificationMessageManagerApprove"];
+                                        mhelper.CallFCMNode(ManagersQueueLog_ID2, messagedata.managerEmployeeId, managerQueue.PushAddr, notificationMessageManagerApprove, managerQueue.DeviceID);
                                     }
                                 }
                             }

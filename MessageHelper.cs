@@ -342,6 +342,12 @@ namespace RabbitMQManager
                 logger.Error(ex);
             }
         }
+
+        public void AddPushLog(Guid ManagersQueueLog_ID, string PushQueueName, string Request, string ManagerEmployeeId, string AgentId, string AgentName)
+        {
+            dbManager.ManagersQueue_Log_Push_Add(ManagersQueueLog_ID, PushQueueName, Request, ManagerEmployeeId, AgentId, AgentName);
+        }
+
         public void AddLog(Guid ManagersQueueLog_ID, Guid? AgentLog_ID, string Request, string Response, string queueName, string DeviceID, int ClientType, string Command, string AgentId, string AgentName, string EmployeeId, string ActivityCode, string ActivityDescription, string ManagerEmployeeId, string ManagerName, string Subject, Nullable<int> SentToManagersCount, string ReceivedManagerEmployeeId, string ReceivedStatus)
         {
             dbManager.ManagersQueue_Log_Add(ManagersQueueLog_ID, AgentLog_ID, Request, Response, queueName, DeviceID, ClientType, Command, AgentId, AgentName, EmployeeId, ActivityCode, ActivityDescription, ManagerEmployeeId, ManagerName, Subject, SentToManagersCount, ReceivedManagerEmployeeId, ReceivedStatus);

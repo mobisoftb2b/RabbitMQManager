@@ -193,6 +193,37 @@ namespace RabbitMQManager
             }
             return -1;
         }
+
+        public int ManagersQueue_Log_Push_Add(Guid ManagersQueueLog_ID, string PushQueueName, string Request, string ManagerEmployeeId, string AgentId, string AgentName) {
+            try
+            {
+                int result = -1;
+                using (var conn = new SqlConnection(connectionString))
+                using (var command = new SqlCommand("ManagersQueue_Log_Push_Add", conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+
+                })
+                {
+                    command.Parameters.Add(new SqlParameter("@ManagerQueueLog_ID", ManagersQueueLog_ID));
+                    command.Parameters.Add(new SqlParameter("@PushQueueName", PushQueueName));
+                    command.Parameters.Add(new SqlParameter("@Request", Request));
+                    command.Parameters.Add(new SqlParameter("@ManagerEmployeeId", @ManagerEmployeeId));
+                    command.Parameters.Add(new SqlParameter("@AgentId", AgentId));
+                    command.Parameters.Add(new SqlParameter("@AgentName", AgentName));
+
+                    conn.Open();
+                    result = command.ExecuteNonQuery();
+                    conn.Close();
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+            return -1;
+        }
         public int ManagersQueue_Log_Add(Guid ManagersQueueLog_ID, Guid? AgentLog_ID, string Request, string Response, string QueueName, string DeviceID, int ClientType, string Command, string AgentId, string AgentName, string EmployeeId, string ActivityCode, string ActivityDescription, string ManagerEmployeeId, string ManagerName, string Subject, Nullable<int> SentToManagersCount, string ReceivedManagerEmployeeId, string ReceivedStatus)
         {
             try
