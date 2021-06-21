@@ -189,6 +189,8 @@ namespace RabbitMQManager
                             if (jsonMessage.FileData != null)
                                 messagedata.fileContent = (string)jsonMessage.FileData;
                             messagedata.deviceUniqueID = ((dynamic)jsonMessage.deviceInfo).DeviceUniqueID;
+                            messagedata.managerEmployeeId = (string)jsonMessage.ManagerEmplId;
+                            messagedata.fileName = messagedata.managerEmployeeId + "_" + messagedata.fileName;
                             messagedata.jsonMessageToSend = ArrangeMessageSendLog(messagedata.deviceUniqueID, messagedata.fileName, messageId);
                             logger.Info(messagedata.jsonMessageToSend);
                             messagedata.keepShort = true;
