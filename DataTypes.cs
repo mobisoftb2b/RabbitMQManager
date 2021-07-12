@@ -6,6 +6,7 @@ namespace RabbitMQManager
 {
     public class MessageData {
         public string jsonMessageToSend { get; set; }
+        public string requestID { get; set; }
         public string queueName { get; set; }
         public string pushQueueName { get; set; }
         public List<ManagerQueue> managerQueues { get; set; }
@@ -35,6 +36,8 @@ namespace RabbitMQManager
         public String AgentMessageId { get; set; }
 
         public String jsonMessagePush { get; set; }
+
+        public Nullable<RequestType> requestType { get; set; }
     }
     class LoginUserResponse { 
         public int status { get; set; }
@@ -103,4 +106,17 @@ namespace RabbitMQManager
         public string RequestStatus { get; set; }
     }
 
+    public enum RequestStatus { 
+        Received=1,
+        PushSent=2,
+        PushReceived=3,
+        RequestApproved=4,
+        RequestCancelled=5
+    }
+
+    public enum RequestType
+    {
+        AskApprove = 1,
+        Cancel = 2
+    }
 }

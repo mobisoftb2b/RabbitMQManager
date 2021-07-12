@@ -224,6 +224,40 @@ namespace RabbitMQManager
             }
             return -1;
         }
+
+        public int ManagersQueue_RequestLog_Add(String RequestID, Nullable<Guid> AgentLog_ID, String requestStatus, String managerComment, String managerID, String managerEmplId, String queueName)
+        {
+            try
+            {
+                int result = -1;
+                using (var conn = new SqlConnection(connectionString))
+                using (var command = new SqlCommand("ManagersQueue_RequestLog_Add", conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+
+                })
+                {
+                    command.Parameters.Add(new SqlParameter("@RequestID", RequestID));
+                    command.Parameters.Add(new SqlParameter("@AgentLog_ID", AgentLog_ID == null? (object)DBNull.Value : (Guid)AgentLog_ID));
+                    command.Parameters.Add(new SqlParameter("@RequestStatus", requestStatus));
+                    command.Parameters.Add(new SqlParameter("@ManagerComment", managerComment));
+                    command.Parameters.Add(new SqlParameter("@ManagerID", managerID));
+                    command.Parameters.Add(new SqlParameter("@ManagerEmplId", managerEmplId));
+                    command.Parameters.Add(new SqlParameter("@QueueName", queueName));
+
+                    conn.Open();
+                    result = command.ExecuteNonQuery();
+                    conn.Close();
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+            return -1;
+        }
+
         public int ManagersQueue_Log_Add(Guid ManagersQueueLog_ID, Guid? AgentLog_ID, string Request, string Response, string QueueName, string DeviceID, int ClientType, string Command, string AgentId, string AgentName, string EmployeeId, string ActivityCode, string ActivityDescription, string ManagerEmployeeId, string ManagerName, string Subject, Nullable<int> SentToManagersCount, string ReceivedManagerEmployeeId, string ReceivedStatus)
         {
             try

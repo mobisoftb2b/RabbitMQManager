@@ -214,7 +214,7 @@ namespace RabbitMQManager
                 string jsonMessageToSend;
                 string queueName;
                 mhelper.HandleMessageFakeAgent(message, out jsonMessageToSend, out queueName);
-                if (queueName != null)
+                if (queueName != null && jsonMessageToSend != null)
                 {
                     SendMessage(jsonMessageToSend, queueName);
                 }
@@ -244,74 +244,79 @@ namespace RabbitMQManager
                 //int clientType = 0;
                 MessageData messagedata = null;
                 mhelper.HandleMessage(ref message, out messagedata);
-                if (messagedata.isForwardMessage)
-                {   //askApprove or cancel
-                    //first add parent (agent record log)
-                    Guid ManagersQueueLog_ID = messagedata.agentMessageId;
-                    if (!String.IsNullOrEmpty(messagedata.test) && messagedata.test == "pushQueue")
-                    {
-                        foreach (var managerQueue in messagedata.managerQueues)
+                if (messagedata != null)
+                {
+                    if (messagedata.isForwardMessage)
+                    {   //askApprove or cancel
+                        //first add parent (agent record log)
+                        Guid ManagersQueueLog_ID = messagedata.agentMessageId;
+                        if (!String.IsNullOrEmpty(messagedata.test) && messagedata.test == "pushQueue")
                         {
-                            if (!String.IsNullOrEmpty(managerQueue.PushQueueName))
-                            {
-                                SendMessage(messagedata.jsonMessagePush, managerQueue.PushQueueName);
-                                mhelper.AddPushLog(Guid.NewGuid(), managerQueue.PushQueueName, messagedata.jsonMessagePush, messagedata.managerEmployeeId, messagedata.agentId, messagedata.agentName);
-                                logger.Info("sent queue push to queue" + managerQueue.PushQueueName + " message " + messagedata.jsonMessagePush);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (messagedata.queueName != null && !String.IsNullOrEmpty(messagedata.jsonMessageToReturn))
-                        {
-                            SendMessage(messagedata.jsonMessageToReturn, messagedata.queueName, 0, messagedata.keepShort);
-                            mhelper.AddLog(ManagersQueueLog_ID, null, message, messagedata.jsonMessageToReturn, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, messagedata.managerQueues.Count, null, null);
-                        }
-                        if (messagedata.managerQueues != null && messagedata.managerQueues.Count > 0)
-                        {
-                            //if (ManagersQueueLog_ID != null)
-                            //    mhelper.AddLogDevices(ManagersQueueLog_ID.Value, messagedata.managerQueues);
                             foreach (var managerQueue in messagedata.managerQueues)
                             {
-                                SendMessage(messagedata.jsonMessageToSend, managerQueue.QueueName);
-                                Guid ManagersQueueLog_ID2 = Guid.NewGuid();
-                                mhelper.AddLog(ManagersQueueLog_ID2, ManagersQueueLog_ID, message, messagedata.jsonMessageToSend, managerQueue.QueueName, managerQueue.DeviceID, 1, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, null);
-                                if (messagedata.sendNotification)
+                                if (!String.IsNullOrEmpty(managerQueue.PushQueueName))
                                 {
-                                    if (!String.IsNullOrEmpty(managerQueue.PushQueueName))
+                                    SendMessage(messagedata.jsonMessagePush, managerQueue.PushQueueName);
+                                    mhelper.AddPushLog(Guid.NewGuid(), managerQueue.PushQueueName, messagedata.jsonMessagePush, messagedata.managerEmployeeId, messagedata.agentId, messagedata.agentName);
+                                    logger.Info("sent queue push to queue" + managerQueue.PushQueueName + " message " + messagedata.jsonMessagePush);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (messagedata.queueName != null && !String.IsNullOrEmpty(messagedata.jsonMessageToReturn))
+                            {
+                                SendMessage(messagedata.jsonMessageToReturn, messagedata.queueName, 0, messagedata.keepShort);
+                                mhelper.AddLog(ManagersQueueLog_ID, null, message, messagedata.jsonMessageToReturn, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, messagedata.managerQueues.Count, null, null);
+                            }
+                            if (messagedata.managerQueues != null && messagedata.managerQueues.Count > 0)
+                            {
+                                //if (ManagersQueueLog_ID != null)
+                                //    mhelper.AddLogDevices(ManagersQueueLog_ID.Value, messagedata.managerQueues);
+                                foreach (var managerQueue in messagedata.managerQueues)
+                                {
+                                    SendMessage(messagedata.jsonMessageToSend, managerQueue.QueueName);
+                                    Guid ManagersQueueLog_ID2 = Guid.NewGuid();
+                                    mhelper.AddLog(ManagersQueueLog_ID2, ManagersQueueLog_ID, message, messagedata.jsonMessageToSend, managerQueue.QueueName, managerQueue.DeviceID, 1, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, null);
+                                    if (messagedata.sendNotification)
                                     {
-                                        SendMessage(messagedata.jsonMessagePush, managerQueue.PushQueueName);
-                                        logger.Info("sent queue push to queue" + managerQueue.PushQueueName + " message " + messagedata.jsonMessagePush);
-                                        mhelper.AddPushLog(ManagersQueueLog_ID2, managerQueue.PushQueueName, messagedata.jsonMessagePush, messagedata.managerEmployeeId, messagedata.agentId, messagedata.agentName);
-                                    }
-                                    else {
-                                        string notificationMessageManagerApprove = ConfigurationManager.AppSettings["notificationMessageManagerApprove"];
-                                        mhelper.CallFCMNode(ManagersQueueLog_ID2, messagedata.managerEmployeeId, managerQueue.PushAddr, notificationMessageManagerApprove, managerQueue.DeviceID);
+                                        if (!String.IsNullOrEmpty(managerQueue.PushQueueName))
+                                        {
+                                            SendMessage(messagedata.jsonMessagePush, managerQueue.PushQueueName);
+                                            logger.Info("sent queue push to queue" + managerQueue.PushQueueName + " message " + messagedata.jsonMessagePush);
+                                            mhelper.AddPushLog(ManagersQueueLog_ID2, managerQueue.PushQueueName, messagedata.jsonMessagePush, messagedata.managerEmployeeId, messagedata.agentId, messagedata.agentName);
+                                            mhelper.AddRequestLog(messagedata.requestID, messagedata.agentMessageId, "PushSentToManager", "", "", messagedata.managerEmployeeId, managerQueue.PushQueueName);
+                                        }
+                                        else
+                                        {
+                                            string notificationMessageManagerApprove = ConfigurationManager.AppSettings["notificationMessageManagerApprove"];
+                                            mhelper.CallFCMNode(ManagersQueueLog_ID2, messagedata.managerEmployeeId, managerQueue.PushAddr, notificationMessageManagerApprove, managerQueue.DeviceID);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-                else //all other cases - just return a message to queueName
-                {
-                    if (messagedata.queueName != null)
+                    else //all other cases - just return a message to queueName
                     {
-                        SendMessage(messagedata.jsonMessageToSend, messagedata.queueName, 0, messagedata.keepShort);
-                        Guid ManagersQueueLog_ID3 = Guid.NewGuid();
-                        if (messagedata.command == "sendLog")
+                        if (messagedata.queueName != null)
                         {
-                            mhelper.AddLog(ManagersQueueLog_ID3, null, "sendLog", messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, null);
-                            clientLog.SaveFile(messagedata.fileContent, messagedata.fileName);
+                            SendMessage(messagedata.jsonMessageToSend, messagedata.queueName, 0, messagedata.keepShort);
+                            Guid ManagersQueueLog_ID3 = Guid.NewGuid();
+                            if (messagedata.command == "sendLog")
+                            {
+                                mhelper.AddLog(ManagersQueueLog_ID3, null, "sendLog", messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, null);
+                                clientLog.SaveFile(messagedata.fileContent, messagedata.fileName);
+                            }
+                            else
+                                if (messagedata.command == "received")
+                            {
+                                Guid? agentLogID = Guid.Parse(messagedata.AgentMessageId);
+                                mhelper.AddLog(ManagersQueueLog_ID3, agentLogID, message, messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, messagedata.managerEmployeeId, messagedata.requestStatus);
+                            }
+                            else
+                                mhelper.AddLog(ManagersQueueLog_ID3, null, message, messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, messagedata.requestStatus);
                         }
-                        else
-                            if (messagedata.command == "received")
-                        {
-                            Guid? agentLogID = Guid.Parse(messagedata.AgentMessageId); 
-                            mhelper.AddLog(ManagersQueueLog_ID3, agentLogID, message, messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, messagedata.managerEmployeeId, messagedata.requestStatus);
-                        }
-                        else
-                            mhelper.AddLog(ManagersQueueLog_ID3, null, message, messagedata.jsonMessageToSend, messagedata.queueName, messagedata.deviceUniqueID, messagedata.clientType, messagedata.command, messagedata.agentId, messagedata.agentName, messagedata.employeeId, messagedata.activityCode, messagedata.activityDescription, messagedata.managerEmployeeId, messagedata.managerName, messagedata.subject, null, null, messagedata.requestStatus);
                     }
                 }
                 

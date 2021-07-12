@@ -46,7 +46,6 @@ namespace RabbitMQManager
             messagedata.jsonMessageToSend = "";
             messagedata.managerQueues = new List<ManagerQueue>();
             messagedata.queueName = null;
-            string queueName = null;
             string deviceUniqueID = "";
             messagedata.deviceUniqueID = "";
             messagedata.sendNotification = false;
@@ -70,6 +69,13 @@ namespace RabbitMQManager
                     string ManagerName = "";
                     messagedata.command = (String)jsonMessage.command;
                     logger.Info(messagedata.command);
+                    string agentRequestId = "";
+                    Nullable<Guid> agentMessageId;
+                    String requestStatus = null;
+                    String managerComment = null;
+                    String managerID = null;
+                    String managerEmplId = null;
+                    String queueName = null;
                     switch (messagedata.command)
                     {
                         case "loginUser":
@@ -240,6 +246,18 @@ namespace RabbitMQManager
                             logger.Info(messagedata.jsonMessageToSend);
                             messagedata.keepShort = true;
                             break;
+                        case "managerLog":
+                            agentRequestId = (String)jsonMessage.RequestID;
+                            agentMessageId = (jsonMessage.AgentMessageId == null ? (Nullable<Guid>)null : Guid.Parse((String)jsonMessage.AgentMessageId));
+                            requestStatus = (String)jsonMessage.RequestStatus;
+                            managerComment = (String)jsonMessage.ManagerComment;
+                            managerID = (String)jsonMessage.ManagerID;
+                            managerEmplId = (String)jsonMessage.ManagerEmplId;
+                            queueName = (string)jsonMessage.QueueName;
+                            AddLog(Guid.NewGuid(), agentMessageId, message, "", "", "", 1, "managerLog", "", "", "", "", "", managerEmplId, "", "", 0, "", "");
+                            AddRequestLog(agentRequestId, agentMessageId, requestStatus, managerComment, managerID, managerEmplId, queueName);
+                            messagedata = null;
+                            break;
                         case "refresh":
                             messagedata.clientType = 1;
                             if (jsonMessage.QueueName != null)
@@ -276,6 +294,7 @@ namespace RabbitMQManager
                             messagedata.deviceUniqueID = deviceUniqueID;
                             messagedata.queueName = queueName;
                             messagedata.clientType = 2;
+                            messagedata.requestID = (String)jsonMessage.RequestID;
                             messagedata.employeeId = (String)jsonMessage.EmployeeId;
                             messagedata.subject = (String)jsonMessage.Subject;
                             messagedata.managerEmployeeId = ((string)jsonMessage.ManagerEmployeeId).Replace("'", "");
@@ -298,12 +317,15 @@ namespace RabbitMQManager
                             //logger.Info(message);
                             messagedata.jsonMessageToSend = message;
                             messagedata.jsonMessagePush = messagePush;
+                            messagedata.requestType = RequestType.AskApprove;
+                            AddRequestLog(messagedata.requestID, messagedata.agentMessageId, "AskApproveReceivedFromAgent", "", "", messagedata.managerEmployeeId, "");
                             break;
                         case "cancel":
                             GetDeviceIDFromTabletMessage((dynamic)jsonMessage.consumerToken, out deviceUniqueID, out queueName);
                             messagedata.deviceUniqueID = deviceUniqueID;
                             messagedata.queueName = queueName;
                             messagedata.clientType = 2;
+                            messagedata.requestID = (String)jsonMessage.RequestID;
                             messagedata.employeeId = (String)jsonMessage.EmployeeId;
                             messagedata.subject = (String)jsonMessage.Subject;
                             messagedata.managerEmployeeId = ((string)jsonMessage.ManagerEmployeeId).Replace("'", "");
@@ -320,6 +342,8 @@ namespace RabbitMQManager
                             messagedata.agentMessageId = Guid.NewGuid();
                             message = message.Insert(message.LastIndexOf('}'), $@",""AgentMessageId"":""{messagedata.agentMessageId}""");
                             messagedata.jsonMessageToSend = message;
+                            messagedata.requestType = RequestType.Cancel;
+                            AddRequestLog(messagedata.requestID, messagedata.agentMessageId, "CancelReceivedFromAgent", "", "", messagedata.managerEmployeeId, "");
                             break;
                     }
                 }
@@ -344,7 +368,9 @@ namespace RabbitMQManager
                 logger.Error(ex);
             }
         }
-
+        public void AddRequestLog(String RequestID, Nullable<Guid> AgentLog_ID, String requestStatus, String managerComment, String managerID, String managerEmplId, String queueName) {
+            dbManager.ManagersQueue_RequestLog_Add(RequestID, AgentLog_ID, requestStatus, managerComment, managerID, managerEmplId, queueName);
+        }
         public void AddPushLog(Guid ManagersQueueLog_ID, string PushQueueName, string Request, string ManagerEmployeeId, string AgentId, string AgentName)
         {
             dbManager.ManagersQueue_Log_Push_Add(ManagersQueueLog_ID, PushQueueName, Request, ManagerEmployeeId, AgentId, AgentName);
